@@ -138,13 +138,13 @@ const isInvalidExceptionName = (string) => {
 };
 
 // TODO: find out if this will actually be useful
-// const forceTitleCase = (string) => {
-//     const modifiedString = string[0].toLowerCase() + string.substring(1, string.length - 1).toUpperCase();
-//     for(let iChar = 0; iChar < string.length; ++iChar) {
-//         if(string[iChar] === modifiedString[iChar]) return false;
-//     }
-//     return true;
-// };
+const forceTitleCase = (string) => {
+    const modifiedString = string[0].toLowerCase() + string.substring(1, string.length - 1).toUpperCase();
+    for(let iChar = 0; iChar < string.length; ++iChar) {
+        if(string[iChar] === modifiedString[iChar]) return false;
+    }
+    return true;
+};
 
 const errorExists = function(months, name) { 
     for(let month in months) {
