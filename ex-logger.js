@@ -58,12 +58,17 @@ ExceptionLogger.prototype = {
     throw: function(exception, message, generate) {
         const isValidException = (type) => {
             for(let validException in this.exceptions) {
-                if(type !== validException && isInvalidExceptionName()) {
+                if(type !== validException) {
                     return false;
                 }
             }
             return true;
         };
+        if(!isInvalidExceptionName(exception)) {
+            console.warn('Invalid exception given');
+            return {};
+        }
+
         if(!isNullOrEmpty(exception) && !isNullOrEmpty(message) && isValidException(exception)) {
             throw new (this.exceptions[error])(message);
         } else if(!isNullOrEmpty(exception) && !isNullOrEmpty(message) && generate) {
@@ -96,86 +101,72 @@ const isCharString = (string) => {
         }
         return true;
     }
-	return false;
-};
-
-const isInvalidExceptionName = (string) => {
-    const invalid = {
-        keywords: ['var', 'let', 'const', 'function', 'Date', 'window', 'document', 'return'],
-        specialChars: ['=>', '(', ')','}', ':', ';', '!', '[', ']', '.', '+', '-', '=', '/', '^', '%', '&', '*', '"'],
-        // have not workedout the quirks
-        // contains: function(value) {
-        //     const valueContainedIn = (value, container=[]) => {
-        //         let isInvalid = false;
-        //         container.forEach( (invalid) => {
-        //             if(value.indexOf(invalid) !== -1) {
-        //                 isInvalid = true;
-        //             }
-        //         });
-        //         if(isInvalid) {
-        //             return true;
-        //         } else {
-        //             return valueContainedIn(value, )
-        //         }
-        //     }
-        // }
-    };
-    
-    let isValid = true;
-
-    invalid.specialChars.forEach((value) => {
-        if(string.indexOf(value) !== -1) {
-            isValid = false;
-            console.log(isValid);
-        }
-    });
-    invalid.keywords.forEach((value) => {
-        if(string.indexOf(value) !== -1) {
-            isValid = false;
-        }
-    });
-    return isValid;
-};
-
-// TODO: find out if this will actually be useful
-// const forceTitleCase = (string) => {
-//     const modifiedString = string[0].toLowerCase() + string.substring(1, string.length - 1).toUpperCase();
-//     for(let iChar = 0; iChar < string.length; ++iChar) {
-//         if(string[iChar] === modifiedString[iChar]) return false;
-//     }
-//     return true;
-// };
-
-const errorExists = function(months, name) { 
-    for(let month in months) {
-        if(month.toLowerCase() === name.toLowerCase())
-            return true;
-    }
     return false;
 };
 
+const isValidExceptionName = (name) => {
+    if(isNullOrEmpty(name)) {
+        return false;
+    }
+
+	const invalid = {
+        keywords: ['var', 'let', 'const', 'function', 'Date', 'window', 'document', 'return'],
+        specialChars: ['=>', '(', ')','}', ':', ';', '!', '[', ']', '.', '+', '-', '=', '/', '^', '%', '&', '*', '"']
+    };
+    const valueContainedIn = (value, container=[]) => {
+        let isValid = true;
+        container.forEach( (inValid) => {
+            if(value.indexOf(inValid) !== -1) {
+                isValid = false;
+            }
+        });
+        return isValid;
+    };
+
+    let result = valueContainedIn(name, invalid.keywords);
+	if(result) {
+        result = valueContainedIn(name, invalid.specialChars);
+    }
+    
+    return result;
+};
+
+// TODO: find out if this will actually be useful
+const forceTitleCase = (string) => {
+    const modifiedString = string[0].toLowerCase() + string.substring(1, string.length - 1).toUpperCase();
+    for(let iChar = 0; iChar < string.length; ++iChar) {
+        if(string[iChar] === modifiedString[iChar]) return false;
+    }
+    return true;
+};
+
+//
 const detectInvalidError = (error) => typeof error === "object" && error.hasOwnProperty("type") && error.hasOwnProperty("message");
 
 //
-const genError = function(name, forceTitleCase=false) {
-    if(!isCharString(name)) {
-       throw new Error('Names only allow for characters between [a - z] & [A - Z]'); 
+const genError = function(name='', forceTitleCase=false) {
+    if(!isValidExceptionName(name)) {
+        return {};
     }
     if(forceTitleCase) {
         if(!forceTitleCase(name)) {
-            throw new Error('Invalid error naming criteria used for error');
+           console.warn('Invalid error naming criteria used for error');
+           return {};
         }
     }
+    if(!isInvalidExceptionName(name)) {
+        return {};
+    }
+
     const firstChartToUpperCase = (functionName) => functionName[0].toUpperCase() + functionName.substring(1, functionName.length); 
-    let evalString = "function ret() { return (function " +firstChartToUpperCase(name)+"(message) {";
-    //
-    evalString += "if('captureStackTrace' in Error) {";
-    evalString += " Error.captureStackTrace(this, "+exceptionName+")";
-    evalString += "} else this.stack = (new Error()).stack;";
-    evalString += "}); }";
+    let evalString = "function getException() { return (function " +firstChartToUpperCase(name)+"(message) {";
+    evalString += "      if('captureStackTrace' in Error) {";
+    evalString += "        Error.captureStackTrace(this, "+exceptionName+")";
+    evalString += "      } else this.stack = (new Error()).stack;";
+    evalString += "   }); }";
     eval(evalString);
    
-    const exception = ret();
+    const exception = getException();
 
     exception.prototype      = Object.create(Error.prototype);
     exception.prototype.name = exceptionName;
@@ -193,9 +184,9 @@ const typeOf = (value, type) => {
 
 //=======================================================
 
-module.exports = {
-    ExceptionLogger: ExceptionLogger,
-    typeOf: typeOf
-};
+// module.exports = {
+//     ExceptionLogger: ExceptionLogger,
+//     typeOf: typeOf
+// };
 
 //=======================================================
